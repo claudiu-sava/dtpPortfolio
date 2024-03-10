@@ -1,0 +1,41 @@
+on:
+  workflow_call:
+    secrets:
+      FTP_USER:
+        required: true
+      FTP_PASSWORD:
+        required: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🚚 Get latest code
+        uses: actions/checkout@v3
+
+      - name: Get Tag
+        uses: actions/download-artifact@v3
+        with:
+          name: TAG_TYPE
+          path: ./
+
+      - name: Download build page
+        uses: actions/download-artifact@v3
+        with:
+          name: public-page
+          path: ./public/
+
+      - name: Read Tag
+        id: read_tag
+        run: echo "TAG=$(cat tag.txt)" >> $GITHUB_OUTPUT
+
+      - name: 📂 Sync files
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: winweb20.servicehoster.ch
+          username: ${{ secrets.FTP_USER }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./public/
+          server-dir: "./${{steps.read_tag.outputs.TAG}}/"
+          port: 21
+          protocol: ftp
